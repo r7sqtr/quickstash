@@ -1,0 +1,19 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Release artifacts (keep the folder, ignore heavy APKs)
+/releases/*.apk
+
+# Secrets / credentials
+*.keystore
+*.jks
+keystore.properties
+secrets.properties
