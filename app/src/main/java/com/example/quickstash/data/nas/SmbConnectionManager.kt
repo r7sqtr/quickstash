@@ -137,10 +137,13 @@ class SmbConnectionManager(private val settingsStore: ConnectionSettingsStore) {
             val client = SMBClient(config)
             try {
                 val connection = client.connect(settings.host, settings.port)
-                val auth = if (settings.username.isBlank()) {
-                    AuthenticationContext.anonymous()
-                } else {
-                    AuthenticationContext(settings.username, settings.password.toCharArray(), null)
+                val auth = when {
+                    settings.username.isBlank() -> AuthenticationContext.anonymous()
+                    settings.password.isEmpty() -> throw IllegalStateException(
+                        "認証情報を復号できませんでした。設定を開き直して保存してください",
+                    )
+                    else ->
+                        AuthenticationContext(settings.username, settings.password.toCharArray(), null)
                 }
                 val session = connection.authenticate(auth)
                 val share = session.connectShare(settings.share) as? DiskShare

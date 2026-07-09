@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -61,8 +62,8 @@ class MainActivity : FragmentActivity() {
         lifecycleScope.launch {
             val container = (application as QuickStashApp).container
             lockEnabled = container.settingsStore.appLockEnabled()
-            lockState.value = lockEnabled && canAuthenticate()
-            if (lockState.value == true) {
+            lockState.value = lockEnabled
+            if (lockEnabled) {
                 showUnlockPrompt()
             }
         }
@@ -72,7 +73,11 @@ class MainActivity : FragmentActivity() {
                 val locked by lockState
                 when (locked) {
                     null -> Surface(modifier = Modifier.fillMaxSize()) {}
-                    true -> LockScreen(onUnlock = ::showUnlockPrompt)
+                    true -> LockScreen(
+                        canAuthenticate = canAuthenticate(),
+                        onUnlock = ::showUnlockPrompt,
+                        onOpenSecuritySettings = ::openSecuritySettings,
+                    )
                     false -> AppNavHost()
                 }
             }
@@ -89,8 +94,14 @@ class MainActivity : FragmentActivity() {
 
     override fun onStop() {
         super.onStop()
-        if (lockEnabled && canAuthenticate() && !isChangingConfigurations) {
+        if (lockEnabled && !isChangingConfigurations) {
             lockState.value = true
+        }
+    }
+
+    private fun openSecuritySettings() {
+        runCatching {
+            startActivity(android.content.Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS))
         }
     }
 
@@ -127,7 +138,11 @@ class MainActivity : FragmentActivity() {
 }
 
 @androidx.compose.runtime.Composable
-private fun LockScreen(onUnlock: () -> Unit) {
+private fun LockScreen(
+    canAuthenticate: Boolean,
+    onUnlock: () -> Unit,
+    onOpenSecuritySettings: () -> Unit,
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -179,7 +194,7 @@ private fun LockScreen(onUnlock: () -> Unit) {
                             color = Color(0x33FFCA4A),
                             shape = CircleShape,
                         )
-                        .clickable(onClick = onUnlock),
+                        .clickable(enabled = canAuthenticate, onClick = onUnlock),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -190,18 +205,37 @@ private fun LockScreen(onUnlock: () -> Unit) {
                     )
                 }
             }
-            Text(
-                text = "ロックされています",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.85f),
-                modifier = Modifier.padding(top = 20.dp),
-            )
-            Text(
-                text = "タップして解除",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.5f),
-                modifier = Modifier.padding(top = 6.dp),
-            )
+            if (canAuthenticate) {
+                Text(
+                    text = "ロックされています",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(top = 20.dp),
+                )
+                Text(
+                    text = "タップして解除",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            } else {
+                Text(
+                    text = "この端末では解除できません",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(top = 20.dp),
+                )
+                Text(
+                    text = "端末に画面ロック（PIN・パターン・生体）を設定してください",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(onClick = onOpenSecuritySettings) {
+                    Text("端末のセキュリティ設定を開く")
+                }
+            }
         }
     }
 }
