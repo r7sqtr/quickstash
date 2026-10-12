@@ -1091,9 +1091,9 @@ private fun BrowserContent(
                 }
             }
             if (sectionByMonth) {
-                sections.forEach { section ->
+                sections.forEachIndexed { index, section ->
                     item(
-                        key = "header:${section.label}",
+                        key = "header:$index:${section.label}",
                         span = { GridItemSpan(maxLineSpan) },
                     ) {
                         Text(
